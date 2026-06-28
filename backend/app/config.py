@@ -30,6 +30,21 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _env(key: str, default: str = "") -> str:
+    """Read an environment variable, treating empty/whitespace values as unset.
+
+    os.environ.get("DATABASE_URL", fallback) returns "" when the variable
+    EXISTS but is blank (e.g. `DATABASE_URL=` in .env) — which would silently
+    bypass the fallback. This helper normalises that so a blank line behaves
+    exactly like the variable never being set.
+    """
+    value = os.environ.get(key)
+    if value is None:
+        return default
+    value = value.strip()
+    return value if value else default
+
+
 def _build_engine_options(database_uri: str) -> dict:
     """Return SQLAlchemy engine options appropriate for the database type.
 
@@ -58,14 +73,14 @@ class Config:
     # Flask core
     # ------------------------------------------------------------------ #
     # FLASK_ENV was removed in Flask 2.3. We control debug via FLASK_DEBUG.
-    DEBUG = os.environ.get("FLASK_DEBUG", "0") == "1"
+    DEBUG = _env("FLASK_DEBUG", "0") == "1"
 
-    SECRET_KEY = os.environ.get("SECRET_KEY")
+    SECRET_KEY = _env("SECRET_KEY")
     if not SECRET_KEY:
         # Fail loudly in production; in dev fall back to a clearly-insecure key.
-        if os.environ.get("FLASK_ENV_MODE", "dev") == "production":
+        if _env("FLASK_ENV_MODE", "dev") == "production":
             raise RuntimeError("SECRET_KEY must be set in production.")
-        SECRET_KEY = "dev-only-insecure-secret-key-change-me"
+        SECRET_KEY = "dev-only-insecure-secret-key-key-change-me"
 
     # ------------------------------------------------------------------ #
     # Request size limit — 1 MB hard cap. Protects the server from huge
@@ -76,7 +91,7 @@ class Config:
     # ------------------------------------------------------------------ #
     # Database (Neon Postgres in prod, SQLite fallback in dev)
     # ------------------------------------------------------------------ #
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
+    SQLALCHEMY_DATABASE_URI = _env(
         "DATABASE_URL",
         "sqlite:///" + os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "codescan_dev.db"),
     )
@@ -97,20 +112,20 @@ class Config:
     # ------------------------------------------------------------------ #
     # Redis — cache + Flask-Limiter storage backend
     # ------------------------------------------------------------------ #
-    REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-    RATELIMIT_STORAGE_URI = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    REDIS_URL = _env("REDIS_URL", "redis://localhost:6379/0")
+    RATELIMIT_STORAGE_URI = _env("REDIS_URL", "redis://localhost:6379/0")
     RATELIMIT_HEADERS_ENABLED = True
 
     # ------------------------------------------------------------------ #
     # Groq AI (enhancement only — never a hard dependency)
     # ------------------------------------------------------------------ #
-    GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-    GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
+    GROQ_API_KEY = _env("GROQ_API_KEY", "")
+    GROQ_MODEL = _env("GROQ_MODEL", "llama-3.1-8b-instant")
 
     # ------------------------------------------------------------------ #
     # Frontend origin for CORS (env-driven so dev & prod differ)
     # ------------------------------------------------------------------ #
-    FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173")
+    FRONTEND_ORIGIN = _env("FRONTEND_ORIGIN", "http://localhost:5173")
 
     # ------------------------------------------------------------------ #
     # Application constants
@@ -157,5 +172,5 @@ config = {
 
 def get_config():
     """Return the config class for the current FLASK_ENV_MODE (or default)."""
-    mode = os.environ.get("FLASK_ENV_MODE", "development")
+    mode = _env("FLASK_ENV_MODE", "development")
     return config.get(mode, config["default"])
