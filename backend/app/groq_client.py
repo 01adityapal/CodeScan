@@ -17,9 +17,12 @@ Key design decisions:
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional
 
 import pybreaker
+
+logger = logging.getLogger(__name__)
 
 # The groq SDK is imported conditionally so tests can run without it.
 try:
@@ -96,10 +99,12 @@ class GroqClient:
             text = self._breaker.call(self._call_groq, prompt)
             return {"explanation": text, "ai_status": "available"}
         except pybreaker.CircuitBreakerError:
-            # Breaker is open — don't even try the API.
+            logger.warning("Groq circuit breaker is OPEN. Skipping API call.")
             return {"explanation": None, "ai_status": "unavailable"}
-        except Exception:
-            # Any other failure (network, timeout, API error, etc.)
+        except Exception as exc:
+            # Log the real error so it shows up in the Flask terminal.
+            # Still return unavailable gracefully (Groq is an enhancement only).
+            logger.error("Groq API call failed: %s", exc, exc_info=True)
             return {"explanation": None, "ai_status": "unavailable"}
 
     # ------------------------------------------------------------------ #

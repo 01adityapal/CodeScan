@@ -22,6 +22,7 @@ Usage:
 from __future__ import annotations
 
 from flask import Flask, jsonify
+from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_login import LoginManager
@@ -107,6 +108,15 @@ def create_app(config_name: str | None = None) -> Flask:
     db.init_app(app)
     login_manager.init_app(app)
     limiter.init_app(app)
+
+    # CORS — restricted to the frontend origin. supports_credentials=True is
+    # REQUIRED so the browser sends/receives the Flask session cookie during
+    # cross-origin requests (React on :5173 -> Flask on :5000).
+    CORS(
+        app,
+        origins=[app.config["FRONTEND_ORIGIN"]],
+        supports_credentials=True,
+    )
 
     # API returns JSON 401 for unauthenticated requests — no HTML login page.
     @login_manager.unauthorized_handler
