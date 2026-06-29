@@ -22,6 +22,8 @@ Usage:
 from __future__ import annotations
 
 from flask import Flask, jsonify
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_login import LoginManager
 from sqlalchemy import event, text
 from sqlalchemy.exc import SQLAlchemyError
@@ -29,8 +31,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from .config import get_config, config
 from .models import db, User
 
-# Shared across the package. The app factory calls login_manager.init_app(app).
+# Shared across the package. The app factory calls init_app on each.
 login_manager = LoginManager()
+limiter = Limiter(key_func=get_remote_address)
 
 
 # --------------------------------------------------------------------------- #
@@ -103,6 +106,7 @@ def create_app(config_name: str | None = None) -> Flask:
     # 2. Extensions ----------------------------------------------------------
     db.init_app(app)
     login_manager.init_app(app)
+    limiter.init_app(app)
 
     # API returns JSON 401 for unauthenticated requests — no HTML login page.
     @login_manager.unauthorized_handler
@@ -136,8 +140,10 @@ def create_app(config_name: str | None = None) -> Flask:
         }
         return jsonify(body), (200 if db_ok else 503)
 
-    # 7. Routes (registered in a later file via Blueprint) -------------------
-    # from .routes import api_bp
-    # app.register_blueprint(api_bp)
+    # 7. Routes (API + Auth blueprints) -------------------------------------
+    from .routes import api_bp
+    app.register_blueprint(api_bp)
+    from .auth import auth_bp
+    app.register_blueprint(auth_bp)
 
     return app
