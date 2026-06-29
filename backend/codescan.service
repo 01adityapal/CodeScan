@@ -1,0 +1,47 @@
+# =============================================================================
+# CodeScan Gunicorn systemd Service
+# =============================================================================
+# Manages Gunicorn as a background daemon that auto-starts on boot and
+# auto-restarts on crash.
+#
+# Install:
+#   sudo cp codescan.service /etc/systemd/system/codescan.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl start codescan
+#   sudo systemctl enable codescan
+# =============================================================================
+
+[Unit]
+Description=CodeScan Gunicorn Daemon (Flask WSGI Backend)
+After=network.target postgresql.service redis-server.service
+
+[Service]
+Type=notify
+
+# Run as the ubuntu user (EC2 default) with www-data group (Nginx)
+User=ubuntu
+Group=www-data
+
+# Project location
+WorkingDirectory=/home/ubuntu/CodeScan/backend
+
+# Use the venv Python so dependencies are found
+Environment="PATH=/home/ubuntu/CodeScan/backend/venv/bin"
+
+# Start Gunicorn with the config file and app factory
+ExecStart=/home/ubuntu/CodeScan/backend/venv/bin/gunicorn \
+    --config gunicorn.conf.py \
+    "app:create_app()"
+
+# Auto-restart on crash
+Restart=always
+RestartSec=5
+
+# Send logs to syslog (journald, viewable via journalctl)
+StandardInput=null
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=codescan
+
+[Install]
+WantedBy=multi-user.target
