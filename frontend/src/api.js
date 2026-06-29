@@ -15,9 +15,12 @@
 
 import axios from "axios";
 
-// Base URL of the Flask backend. In development this is localhost:5000.
-// In production (AWS) this becomes the CloudFront /api/* origin.
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// Base URL of the Flask backend.
+// - Development: localhost:5000 (different port than Vite's 5173)
+// - Production:  empty string = relative URL (same CloudFront origin as React)
+const BASE_URL = import.meta.env.PROD
+  ? ""
+  : import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // One shared axios instance configured for cookies + JSON.
 const api = axios.create({
