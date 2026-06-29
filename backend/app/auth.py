@@ -23,6 +23,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required, login_user, logout_user
 from sqlalchemy.exc import IntegrityError
 
+from . import limiter
 from .models import User, db
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
@@ -50,6 +51,7 @@ def _get_credentials() -> tuple[str, str] | tuple[None, None]:
 # --------------------------------------------------------------------------- #
 
 @auth_bp.route("/register", methods=["POST"])
+@limiter.limit("3 per minute")  # Prevent automated spam account creation
 def register():
     """Create a new user account."""
     payload = request.get_json(silent=True) or {}
@@ -89,6 +91,7 @@ def register():
 # --------------------------------------------------------------------------- #
 
 @auth_bp.route("/login", methods=["POST"])
+@limiter.limit("5 per minute")  # Layer 1: IP-based brute-force protection
 def login():
     """Authenticate a user.
 

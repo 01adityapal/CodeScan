@@ -30,6 +30,7 @@ from flask import Blueprint, current_app, jsonify, request
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
+from . import limiter
 from .ast_engine import analyze
 from .groq_client import GroqClient
 from .models import Scan, ScanResult, db
@@ -106,6 +107,7 @@ def _dedupe_issues(issues: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 # --------------------------------------------------------------------------- #
 
 @api_bp.route("/analyze", methods=["POST"])
+@limiter.limit("10 per minute")  # Protect Groq API costs / prevent spam
 def analyze_code():
     t0 = time.perf_counter()
 

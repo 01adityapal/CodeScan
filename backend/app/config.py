@@ -142,12 +142,17 @@ class DevelopmentConfig(Config):
     """Local laptop development."""
     DEBUG = True
     SESSION_COOKIE_SECURE = False  # localhost is HTTP
+    # Use in-memory storage for rate limiting (no Redis needed locally).
+    # NOTE: limits reset on server restart, which is fine for development.
+    RATELIMIT_STORAGE_URI = "memory://"
 
 
 class ProductionConfig(Config):
     """EC2 + Gunicorn + Neon."""
     DEBUG = False
     SESSION_COOKIE_SECURE = True   # behind Nginx HTTPS / CloudFront
+    # Production uses Redis for rate limiting (multi-worker safe).
+    # RATELIMIT_STORAGE_URI inherits from Config (which reads REDIS_URL).
 
 
 class TestingConfig(Config):
