@@ -22,6 +22,7 @@ import {
 } from "react-router-dom";
 import { register, login, logout, analyzeCode, getScans } from "./api";
 import ReactMarkdown from "react-markdown";
+import Editor, { useMonaco } from "@monaco-editor/react";
 
 // ========================================================================== //
 // APP ROOT — holds auth state + router
@@ -129,13 +130,24 @@ function HomePage() {
         Paste your Python code below. We walk the AST — your code is never executed.
       </p>
 
-      <textarea
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        style={styles.editor}
-        spellCheck={false}
-        placeholder="Paste Python code here..."
-      />
+      <div style={{ border: "1px solid #c4d4df", borderRadius: "8px", overflow: "hidden" }}>
+        <Editor
+          height="300px"
+          defaultLanguage="python"
+          language="python"
+          value={code}
+          theme="vs-dark"
+          onChange={(value) => setCode(value || "")}
+          options={{
+            minimap: { enabled: false },
+            fontSize: "14px",
+            scrollBeyondLastLine: false,
+            wordWrap: "on",
+            tabSize: 4,
+            automaticLayout: true,
+          }}
+        />
+      </div>
 
       <div style={styles.btnRow}>
         <button
@@ -400,20 +412,6 @@ const styles = {
   h2: { fontSize: "24px", marginBottom: "16px", color: "#0b3d66" },
   h3: { fontSize: "18px", marginBottom: "8px" },
   subtitle: { color: "#5a6b78", marginBottom: "20px", fontSize: "15px" },
-  editor: {
-    width: "100%",
-    minHeight: "240px",
-    padding: "16px",
-    fontFamily: "'Fira Code', 'Courier New', monospace",
-    fontSize: "14px",
-    border: "1px solid #c4d4df",
-    borderRadius: "8px",
-    background: "#fff",
-    resize: "vertical",
-    outline: "none",
-    boxSizing: "border-box",
-    lineHeight: "1.6",
-  },
   btnRow: { display: "flex", gap: "12px", marginTop: "12px" },
   btnPrimary: {
     padding: "10px 24px",
